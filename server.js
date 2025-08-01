@@ -14,7 +14,7 @@ connectDB();
 const allowedOrigins = [
   // "https://ttcontentpost.vercel.app",
   // "https://todaytalks.vercel.app",
-  "http://localhost:3000/"
+  "https://contentpostofficial.vercel.app/"
 ];
 console.log("hi this is frontend");
 const corsOptions = {
