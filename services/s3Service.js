@@ -26,7 +26,6 @@ exports.getUploadUrl = async (fileType) => {
     Key: key,
     ContentType: fileType,
     Expires: 60 * 5, // 5 minutes
-    ACL: "public-read" // Make uploaded files publicly accessible
   };
 
   console.log(params);
