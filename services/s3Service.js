@@ -1,5 +1,5 @@
 const AWS = require('aws-sdk');
-
+const BUCKET_NAME = process.env.S3_BUCKET_NAME;
 // Configure AWS - add validation
 if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
   throw new Error('AWS credentials not configured');
