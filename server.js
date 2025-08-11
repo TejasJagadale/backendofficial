@@ -15,7 +15,8 @@ const allowedOrigins = [
 "http://localhost:3000",
  "https://todaytalks.vercel.app",
  "https://contentpostofficial.vercel.app",
- "https://ttcontentpost.vercel.app"
+ "https://ttcontentpost.vercel.app",
+ "https://todaytalks-20e64.web.app"
 ];
 console.log("hi this is frontend");
 const corsOptions = {
@@ -55,5 +56,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
