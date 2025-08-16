@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
 
     if (existingComment) {
       return res.status(400).json({
-        message: "You've already posted a comment"
+        message: "You've already posted a comment, to post more contact our mail id for SUBSCRIPTION"
       });
     }
     
