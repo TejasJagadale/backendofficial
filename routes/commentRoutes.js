@@ -17,6 +17,19 @@ router.get("/:articleId", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { articleId, articleCategory, content, author, email, mobile } = req.body;
+
+    // Check for existing comment with same mobile and content
+    const existingComment = await Comment.findOne({
+      articleId,
+      mobile,
+      content
+    });
+
+    if (existingComment) {
+      return res.status(400).json({
+        message: "You've already posted a comment"
+      });
+    }
     
     // Validate required fields
     if (!articleId || !articleCategory || !content || !email) {
