@@ -20,9 +20,7 @@ router.post("/", async (req, res) => {
 
     // Check for existing comment with same mobile and content
     const existingComment = await Comment.findOne({
-      articleId,
-      mobile,
-      content
+      mobile
     });
 
     if (existingComment) {
