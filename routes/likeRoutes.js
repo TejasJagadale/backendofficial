@@ -3,113 +3,143 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
 const requestIp = require('request-ip');
+const Article = require('../models/Article');
+const Like = require('../models/Like');
 
-// Rate limiting for like endpoints
+// Rate limiting configuration
 const likeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // limit each IP to 30 likes per windowMs
-  message: 'Too many like requests from this IP, please try again later'
+  max: 30, // limit each IP to 30 requests per windowMs
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Too many like requests from this IP. Please try again later.'
+    });
+  }
 });
-
-// Like tracking model
-const Like = require('../models/Like');
 
 // Middleware to get client IP
 const getClientIp = (req) => {
-  return requestIp.getClientIp(req) || req.ip;
+  const clientIp = requestIp.getClientIp(req) || req.ip;
+  // Handle IPv6 format (common in IPv4-mapped IPv6 addresses)
+  return clientIp.replace('::ffff:', '');
 };
 
-// POST /api/likes/:articleId - Like an article
+/**
+ * @route POST /api/likes/:articleId
+ * @desc Like/unlike an article
+ * @access Public
+ */
 router.post('/:articleId', likeLimiter, async (req, res) => {
-  try {
-    const { articleId } = req.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(articleId)) {
-      return res.status(400).json({ error: 'Invalid article ID' });
-    }
+  const { articleId } = req.params;
+  
+  // Validate article ID
+  if (!mongoose.Types.ObjectId.isValid(articleId)) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Invalid article ID format' 
+    });
+  }
 
+  try {
     const clientIp = getClientIp(req);
     
-    // Check if article exists
+    // Find the article
     const article = await Article.findById(articleId);
     if (!article) {
-      return res.status(404).json({ error: 'Article not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Article not found' 
+      });
     }
 
-    // Check if this IP has already liked the article
+    // Check for existing like
     const existingLike = await Like.findOne({ 
       articleId, 
       userIp: clientIp 
     });
 
+    let result;
+    
     if (existingLike) {
-      // Unlike if already liked
+      // Unlike the article
       await Like.deleteOne({ _id: existingLike._id });
-      
-      // Decrement likes count
-      article.likes = Math.max(0, article.likes - 1);
-      await article.save();
-      
-      return res.json({ 
-        likes: article.likes, 
-        userLiked: false 
+      article.likes = Math.max(0, (article.likes || 0) - 1);
+      result = { likes: article.likes, userLiked: false };
+    } else {
+      // Like the article
+      const newLike = new Like({
+        articleId,
+        userIp: clientIp,
+        createdAt: new Date()
       });
+      await newLike.save();
+      article.likes = (article.likes || 0) + 1;
+      result = { likes: article.likes, userLiked: true };
     }
 
-    // Create new like
-    const newLike = new Like({
-      articleId,
-      userIp: clientIp,
-      createdAt: new Date()
-    });
-    await newLike.save();
-
-    // Increment likes count
-    article.likes = (article.likes || 0) + 1;
+    // Save the updated article
     await article.save();
 
-    res.json({ 
-      likes: article.likes, 
-      userLiked: true 
+    res.status(200).json({
+      success: true,
+      ...result
     });
 
   } catch (error) {
-    console.error('Error in like endpoint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Like operation error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
   }
 });
 
-// GET /api/likes/:articleId/status - Check like status
+/**
+ * @route GET /api/likes/:articleId/status
+ * @desc Get like status for an article
+ * @access Public
+ */
 router.get('/:articleId/status', async (req, res) => {
-  try {
-    const { articleId } = req.params;
-    
-    if (!mongoose.Types.ObjectId.isValid(articleId)) {
-      return res.status(400).json({ error: 'Invalid article ID' });
-    }
+  const { articleId } = req.params;
 
+  // Validate article ID
+  if (!mongoose.Types.ObjectId.isValid(articleId)) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Invalid article ID format' 
+    });
+  }
+
+  try {
     const clientIp = getClientIp(req);
     
-    // Get article likes count
-    const article = await Article.findById(articleId);
+    // Get article and like status in parallel
+    const [article, userLiked] = await Promise.all([
+      Article.findById(articleId).select('likes'),
+      Like.exists({ articleId, userIp: clientIp })
+    ]);
+
     if (!article) {
-      return res.status(404).json({ error: 'Article not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Article not found' 
+      });
     }
 
-    // Check if user has liked
-    const userLiked = await Like.exists({ 
-      articleId, 
-      userIp: clientIp 
-    });
-
-    res.json({ 
-      likes: article.likes || 0, 
-      userLiked: !!userLiked 
+    res.status(200).json({
+      success: true,
+      likes: article.likes || 0,
+      userLiked: !!userLiked
     });
 
   } catch (error) {
-    console.error('Error in like status endpoint:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Like status check error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error',
+      message: error.message 
+    });
   }
 });
 
