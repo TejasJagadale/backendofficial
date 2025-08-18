@@ -210,4 +210,26 @@ router.patch("/toggle-trending/:id", async (req, res) => {
   }
 });
 
+router.post('/:id/like', async (req, res) => {
+  try {
+    const article = await Content.findById(req.params.id);
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+
+    // In a real app, you'd want to track which users have liked
+    // For now, we'll just increment the like count
+    article.likes = (article.likes || 0) + 1;
+    await article.save();
+
+    res.json({ 
+      likes: article.likes,
+      message: 'Article liked successfully' 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
+
