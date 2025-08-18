@@ -9,7 +9,9 @@ const commentRoutes = require("./routes/commentRoutes");
 const likeRoutes = require("./routes/likeRoutes");
 
 
+
 const app = express();
+app.set('trust proxy', true);
 
 // Connect to database first
 connectDB();
@@ -33,6 +35,7 @@ const corsOptions = {
   },
   credentials: true
 };
+
 
 app.use(cors(corsOptions));
 
@@ -62,6 +65,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
