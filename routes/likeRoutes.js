@@ -11,9 +11,6 @@ const likeLimiter = rateLimit({
   message: 'Too many like requests from this IP, please try again later'
 });
 
-// Article model (assuming you have this)
-const Article = require('../models/Article');
-
 // Like tracking model
 const Like = require('../models/Like');
 
