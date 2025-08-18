@@ -6,6 +6,8 @@ const connectDB = require("./config/db");
 const contentRoutes = require("./routes/contentRoutes");
 const s3Routes = require("./routes/s3Routes");
 const commentRoutes = require("./routes/commentRoutes");
+const likeRoutes = require('./routes/likes');
+
 
 const app = express();
 
@@ -42,6 +44,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/s3", s3Routes);
 app.use("/api/contents", contentRoutes);
 app.use("/api/comments", commentRoutes);
+app.use('/api/likes', likeRoutes);
 
 // Static files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -59,6 +62,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
