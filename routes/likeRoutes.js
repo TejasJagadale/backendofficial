@@ -6,21 +6,32 @@ const requestIp = require('request-ip');
 const Article = require('../models/Article');
 const Like = require('../models/Like');
 
-// Rate limiting configuration
+// Enable trust proxy for correct IP detection behind proxies
+router.set('trust proxy', true);  // Add this line
+
+// Improved rate limiting configuration
 const likeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 30, // limit each IP to 30 requests per windowMs
-  handler: (req, res) => {
-    res.status(429).json({
-      error: 'Too many like requests from this IP. Please try again later.'
-    });
+  message: 'Too many like requests from this IP. Please try again later.',
+  validate: { 
+    trustProxy: true // Explicitly enable proxy validation
+  },
+  keyGenerator: (req) => {
+    // Get IP address with proper proxy handling
+    const ip = requestIp.getClientIp(req) || req.ip;
+    return ip.replace('::ffff:', '').split(',')[0].trim();
   }
 });
 
-// Middleware to get client IP
+// Middleware to get client IP with proxy support
 const getClientIp = (req) => {
-  const clientIp = requestIp.getClientIp(req) || req.ip;
-  // Handle IPv6 format (common in IPv4-mapped IPv6 addresses)
+  let clientIp = requestIp.getClientIp(req) || req.ip;
+  // Handle proxy chains (X-Forwarded-For may contain multiple IPs)
+  if (clientIp.includes(',')) {
+    clientIp = clientIp.split(',')[0].trim();
+  }
+  // Handle IPv6-mapped IPv4 addresses
   return clientIp.replace('::ffff:', '');
 };
 
