@@ -6,33 +6,41 @@ const requestIp = require('request-ip');
 const Article = require('../models/Article');
 const Like = require('../models/Like');
 
-// Enable trust proxy for correct IP detection behind proxies
-router.set('trust proxy', true);  // Add this line
-
-// Improved rate limiting configuration
+// Rate limiting configuration with proper proxy handling
 const likeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 30, // limit each IP to 30 requests per windowMs
   message: 'Too many like requests from this IP. Please try again later.',
   validate: { 
-    trustProxy: true // Explicitly enable proxy validation
+    trustProxy: true // Enable proxy validation
   },
   keyGenerator: (req) => {
-    // Get IP address with proper proxy handling
-    const ip = requestIp.getClientIp(req) || req.ip;
-    return ip.replace('::ffff:', '').split(',')[0].trim();
+    // Get the client IP from request-ip with proxy support
+    const ip = requestIp.getClientIp(req);
+    // Handle cases where IP might be undefined
+    return ip ? ip.replace('::ffff:', '').split(',')[0].trim() : req.ip;
   }
 });
 
-// Middleware to get client IP with proxy support
+// Improved IP detection middleware
 const getClientIp = (req) => {
-  let clientIp = requestIp.getClientIp(req) || req.ip;
-  // Handle proxy chains (X-Forwarded-For may contain multiple IPs)
-  if (clientIp.includes(',')) {
-    clientIp = clientIp.split(',')[0].trim();
+  try {
+    let clientIp = requestIp.getClientIp(req);
+    
+    // If no IP found, fall back to Express's IP
+    if (!clientIp) return req.ip;
+    
+    // Handle multiple IPs in X-Forwarded-For
+    if (clientIp.includes(',')) {
+      clientIp = clientIp.split(',')[0].trim();
+    }
+    
+    // Clean IPv6-mapped IPv4 addresses
+    return clientIp.replace('::ffff:', '');
+  } catch (error) {
+    console.error('Error getting client IP:', error);
+    return req.ip;
   }
-  // Handle IPv6-mapped IPv4 addresses
-  return clientIp.replace('::ffff:', '');
 };
 
 /**
