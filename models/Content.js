@@ -48,7 +48,15 @@ const createContentModel = (category) => {
     createdAt: {
       type: Date,
       default: Date.now
-    }
+    },
+      likes: {
+    type: Number,
+    default: 0
+  },
+  likedBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User' 
+  }]
   });
 
   // Create and cache the model
@@ -57,5 +65,6 @@ const createContentModel = (category) => {
   
   return model;
 };
+
 
 module.exports = createContentModel;
