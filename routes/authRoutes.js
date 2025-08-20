@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const router = express.Router();
+const { OAuth2Client } = require('google-auth-library');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -43,6 +44,56 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 
 // Create model - check if it already exists to avoid OverwriteModelError
 const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+// Google OAuth endpoint
+router.post('/google', async (req, res) => {
+  try {
+    const { token } = req.body;
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    // Verify the Google token
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+    
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    
+    if (!user) {
+      // Create new user with Google data
+      user = new User({
+        name,
+        email,
+        password: Math.random().toString(36).slice(-8), // Random password
+        avatar: picture,
+        googleId: payload.sub,
+        isVerified: true
+      });
+      await user.save();
+    }
+    
+    // Generate JWT token
+    const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    
+    res.json({
+      success: true,
+      token: jwtToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar
+      }
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ success: false, message: 'Google authentication failed' });
+  }
+});
 
 // Signup endpoint
 // In your authRoutes.js file
