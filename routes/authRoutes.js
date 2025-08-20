@@ -49,37 +49,36 @@ const User = mongoose.models.User || mongoose.model('User', userSchema);
 // In your authRoutes.js
 router.post('/google', async (req, res) => {
   try {
-    // Set CORS headers explicitly
     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.header('Access-Control-Allow-Credentials', 'true');
-    
+
     const { token } = req.body;
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    
+
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
-    
+
     const payload = ticket.getPayload();
-    const { email, name, picture } = payload;
-    
+    const { email, name, picture, sub: googleId } = payload;
+
     let user = await User.findOne({ email });
-    
+
     if (!user) {
       user = new User({
         name,
         email,
-        password: Math.random().toString(36).slice(-8),
         avatar: picture,
-        googleId: payload.sub,
-        isVerified: true
+        googleId,
+        isVerified: true,
+        password: undefined // no password for Google user
       });
       await user.save();
     }
-    
+
     const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    
+
     res.json({
       success: true,
       token: jwtToken,
@@ -99,6 +98,7 @@ router.post('/google', async (req, res) => {
     });
   }
 });
+
 
 // Signup endpoint
 // In your authRoutes.js file
