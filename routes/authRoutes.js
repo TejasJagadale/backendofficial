@@ -46,12 +46,16 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 // Google OAuth endpoint
+// In your authRoutes.js
 router.post('/google', async (req, res) => {
   try {
+    // Set CORS headers explicitly
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    
     const { token } = req.body;
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     
-    // Verify the Google token
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -60,15 +64,13 @@ router.post('/google', async (req, res) => {
     const payload = ticket.getPayload();
     const { email, name, picture } = payload;
     
-    // Check if user already exists
     let user = await User.findOne({ email });
     
     if (!user) {
-      // Create new user with Google data
       user = new User({
         name,
         email,
-        password: Math.random().toString(36).slice(-8), // Random password
+        password: Math.random().toString(36).slice(-8),
         avatar: picture,
         googleId: payload.sub,
         isVerified: true
@@ -76,7 +78,6 @@ router.post('/google', async (req, res) => {
       await user.save();
     }
     
-    // Generate JWT token
     const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
     
     res.json({
@@ -91,7 +92,11 @@ router.post('/google', async (req, res) => {
     });
   } catch (error) {
     console.error('Google auth error:', error);
-    res.status(500).json({ success: false, message: 'Google authentication failed' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Google authentication failed',
+      error: error.message 
+    });
   }
 });
 
