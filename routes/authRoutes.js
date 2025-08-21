@@ -90,7 +90,7 @@ router.post('/google', async (req, res) => {
       error: error.message 
     });
   }
-}
+});
 
 // Signup endpoint - Updated to accept mobile number
 router.post('/signup', async (req, res) => {
