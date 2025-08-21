@@ -14,10 +14,6 @@ router.post("/:category/:articleId/like", auth, async (req, res) => {
     const { category, articleId } = req.params;
     const { userId } = req.body;
 
-    console.log(
-      `Like request: category=${category}, articleId=${articleId}, userId=${userId}`
-    );
-
     // Get the correct model for the category
     const ContentModel = getContentModel(category);
 
@@ -42,11 +38,9 @@ router.post("/:category/:articleId/like", auth, async (req, res) => {
       article.likes = article.likes.filter(
         (id) => id.toString() !== userId.toString()
       );
-      console.log("Article unliked");
     } else {
       // Like the article
       article.likes.push(userId);
-      console.log("Article liked");
     }
 
     await article.save();
@@ -68,16 +62,11 @@ router.get("/:category/:articleId/like-status", auth, async (req, res) => {
     const { category, articleId } = req.params;
     const userId = req.query.userId || req.body.userId; // allow frontend to send it
 
-    console.log(
-      `Like status request: category=${category}, articleId=${articleId}, userId=${userId}`
-    );
-
     // Get the correct model for the category
     const ContentModel = getContentModel(category);
 
     const article = await ContentModel.findById(articleId);
     if (!article) {
-      console.log("Article not found for like status");
       return res.status(404).json({ message: "Article not found" });
     }
 
@@ -86,8 +75,6 @@ router.get("/:category/:articleId/like-status", auth, async (req, res) => {
     const isLiked = likesArray.some(
       (id) => id.toString() === userId.toString()
     );
-
-    console.log(`Like status: liked=${isLiked}, count=${likesArray.length}`);
 
     res.json({
       liked: isLiked,
