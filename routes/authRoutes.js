@@ -8,9 +8,11 @@ const { OAuth2Client } = require('google-auth-library');
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // User Schema - Define it only once
+// User Schema - Updated to include mobile number
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  mobile: { type: String, required: true, unique: true, trim: true },
   password: { type: String, minlength: 6 },
   avatar: { type: String },
   googleId: { type: String },
@@ -91,20 +93,31 @@ router.post('/google', async (req, res) => {
 });
 
 
-// Signup endpoint
-// In your authRoutes.js file
+// Signup endpoint - Updated to accept mobile number
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, mobile, password } = req.body;
     
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Check if user already exists with email
+    const existingUserByEmail = await User.findOne({ email });
+    if (existingUserByEmail) {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
     
+    // Check if user already exists with mobile number
+    const existingUserByMobile = await User.findOne({ mobile });
+    if (existingUserByMobile) {
+      return res.status(400).json({ message: 'User already exists with this mobile number' });
+    }
+    
+    // Validate mobile number format
+    const mobileRegex = /^[0-9]{10}$/;
+    if (!mobileRegex.test(mobile)) {
+      return res.status(400).json({ message: 'Please provide a valid 10-digit mobile number' });
+    }
+    
     // Create new user
-    const user = new User({ name, email, password });
+    const user = new User({ name, email, mobile, password });
     await user.save();
     
     // Don't generate JWT token or log in automatically
