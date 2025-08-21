@@ -12,7 +12,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  mobile: { type: String, required: true, unique: true, trim: true },
+  mobile: { 
+    type: String, 
+    unique: true, 
+    trim: true,
+    sparse: true // This allows multiple null values for uniqueness
+  },
   password: { type: String, minlength: 6 },
   avatar: { type: String },
   googleId: { type: String },
