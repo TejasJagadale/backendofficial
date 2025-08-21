@@ -40,37 +40,130 @@ const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 // Google OAuth endpoint
 // In your authRoutes.js
+// router.post('/google', async (req, res) => {
+//   try {
+//     res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+//     res.header('Access-Control-Allow-Credentials', 'true');
+
+//     const { token } = req.body;
+//     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+//     const ticket = await client.verifyIdToken({
+//       idToken: token,
+//       audience: process.env.GOOGLE_CLIENT_ID,
+//     });
+
+//     const payload = ticket.getPayload();
+//     const { email, name, picture, sub: googleId } = payload;
+
+//     let user = await User.findOne({ email });
+
+//     if (!user) {
+//       user = new User({
+//         name,
+//         email,
+//         avatar: picture,
+//         googleId,
+//         isVerified: true,
+//         password: undefined // no password for Google user
+//       });
+//       await user.save();
+//     }
+
+//     const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+
+//     res.json({
+//       success: true,
+//       token: jwtToken,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         avatar: user.avatar
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Google auth error:', error);
+//     res.status(500).json({ 
+//       success: false, 
+//       message: 'Google authentication failed',
+//       error: error.message 
+//     });
+//   }
+// }
+
 router.post('/google', async (req, res) => {
   try {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    console.log('Google auth request received');
+    console.log('Request headers:', req.headers);
+    console.log('Request body:', req.body);
 
     const { token } = req.body;
-    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    if (!token) {
+      console.log('No token provided');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'No Google token provided' 
+      });
+    }
 
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    // Verify the Google token
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_CLIENT_ID,
     });
 
+    console.log('Google token verified successfully');
     const payload = ticket.getPayload();
+    console.log('Google payload:', {
+      email: payload.email,
+      name: payload.name,
+      googleId: payload.sub
+    });
+
     const { email, name, picture, sub: googleId } = payload;
 
-    let user = await User.findOne({ email });
+    // Check if user already exists with this Google ID
+    let user = await User.findOne({ 
+      $or: [
+        { googleId },
+        { email }
+      ]
+    });
 
     if (!user) {
+      // Create new user with Google authentication
+      console.log('Creating new user from Google authentication');
       user = new User({
         name,
         email,
         avatar: picture,
         googleId,
         isVerified: true,
-        password: undefined // no password for Google user
+        // No password for Google users
+        password: undefined
       });
+      await user.save();
+      console.log('New user created:', user._id);
+    } else if (user.googleId !== googleId) {
+      // User exists but not with Google auth - update with Google ID
+      console.log('Updating existing user with Google ID');
+      user.googleId = googleId;
+      user.avatar = picture;
+      user.isVerified = true;
       await user.save();
     }
 
-    const jwtToken = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    // Generate JWT token
+    const jwtToken = jwt.sign({ 
+      userId: user._id,
+      email: user.email 
+    }, JWT_SECRET, { expiresIn: '7d' });
+
+    console.log('JWT token generated for user:', user._id);
 
     res.json({
       success: true,
@@ -79,11 +172,29 @@ router.post('/google', async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        avatar: user.avatar
+        avatar: user.avatar,
+        mobile: user.mobile
       }
     });
+
   } catch (error) {
-    console.error('Google auth error:', error);
+    console.error('Google auth error details:', error);
+    
+    // More specific error messages
+    if (error.message.includes('Token used too late')) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Google token has expired. Please try again.' 
+      });
+    }
+    
+    if (error.message.includes('Wrong number of segments')) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid Google token format.' 
+      });
+    }
+
     res.status(500).json({ 
       success: false, 
       message: 'Google authentication failed',
@@ -91,7 +202,6 @@ router.post('/google', async (req, res) => {
     });
   }
 });
-
 
 // Signup endpoint - Updated to accept mobile number
 router.post('/signup', async (req, res) => {
