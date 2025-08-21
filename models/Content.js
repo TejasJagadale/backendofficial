@@ -45,26 +45,20 @@ const createContentModel = (category) => {
       type: Boolean,
       default: false
     },
+    // Add likes array to store user IDs who liked the content
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User", default: [] }],
+
     createdAt: {
       type: Date,
       default: Date.now
-    },
-      likes: {
-    type: Number,
-    default: 0
-  },
-  likedBy: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' 
-  }]
+    }
   });
 
   // Create and cache the model
   const model = mongoose.model(category, schema, `${category.toLowerCase()}s`);
   modelCache[category] = model;
-  
+
   return model;
 };
-
 
 module.exports = createContentModel;
