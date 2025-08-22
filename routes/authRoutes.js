@@ -402,7 +402,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Protected route example
+// Protected route example changes
 router.get("/profile", async (req, res) => {
   try {
     const token = req.header("Authorization")?.replace("Bearer ", "");
