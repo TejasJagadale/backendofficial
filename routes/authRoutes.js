@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const router = express.Router();
 const { OAuth2Client } = require("google-auth-library");
 const nodemailer = require('nodemailer');
+const auth = require("../middleware/auth");
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
