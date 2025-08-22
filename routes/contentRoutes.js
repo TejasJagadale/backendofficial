@@ -4,6 +4,7 @@ const createContentModel = require("../models/Content");
 const axios = require("axios"); // Required for S3 delete requests
 
 const categories = [
+  "Insights",
   "Technology",
   "Business",
   "Science",
@@ -237,5 +238,6 @@ router.patch("/toggle-trending/:id", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
