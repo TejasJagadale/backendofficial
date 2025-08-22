@@ -402,59 +402,27 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/profile", auth, async (req, res) => {
+// Protected route example
+router.get("/profile", async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Access denied. No token provided." });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.userId).select("-password");
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
+
     res.json(user);
   } catch (error) {
-    console.error("Error fetching profile:", error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Update user profile
-router.put("/profile", auth, async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    
-    // Validate input
-    if (!name || !email) {
-      return res.status(400).json({ message: "Name and email are required" });
-    }
-    
-    // Check if email is already taken by another user
-    const existingUser = await User.findOne({ email, _id: { $ne: req.user.id } });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already in use" });
-    }
-    
-    // Update user
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      { name, email },
-      { new: true, runValidators: true }
-    ).select("-password");
-    
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    
-    res.json({
-      message: "Profile updated successfully",
-      user: updatedUser
-    });
-  } catch (error) {
-    console.error("Error updating profile:", error);
-    
-    if (error.name === "ValidationError") {
-      const errors = Object.values(error.errors).map(val => val.message);
-      return res.status(400).json({ message: errors.join(", ") });
-    }
-    
-    res.status(500).json({ message: "Server error" });
+    res.status(401).json({ message: "Invalid token" });
   }
 });
 
