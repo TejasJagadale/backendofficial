@@ -18,7 +18,6 @@ const categories = [
   "Updates"
 ];
 
-// Add this new route for liking articles
 router.post('/:id/like', async (req, res) => {
   try {
     const article = await Content.findById(req.params.id);
@@ -238,6 +237,7 @@ router.patch("/toggle-trending/:id", async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
