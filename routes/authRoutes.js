@@ -457,28 +457,4 @@ router.put("/profile", auth, async (req, res) => {
   }
 });
 
-// Protected route example
-// router.get("/profile", async (req, res) => {
-//   try {
-//     const token = req.header("Authorization")?.replace("Bearer ", "");
-
-//     if (!token) {
-//       return res
-//         .status(401)
-//         .json({ message: "Access denied. No token provided." });
-//     }
-
-//     const decoded = jwt.verify(token, JWT_SECRET);
-//     const user = await User.findById(decoded.userId).select("-password");
-
-//     if (!user) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     res.json(user);
-//   } catch (error) {
-//     res.status(401).json({ message: "Invalid token" });
-//   }
-// });
-
 module.exports = router;
