@@ -11,7 +11,7 @@ const likeRoutes = require("./routes/likeRoutes");
 
 const app = express();
 
-// Connect to database first
+// Connect to database first changed
 connectDB();
 
 const allowedOrigins = [
@@ -69,6 +69,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
 
