@@ -12,7 +12,7 @@ const commentSchema = new mongoose.Schema({
     enum: [
       "Technology", "Business", "Science", "Environment", 
       "Health", "Entertainment", "Sports", "Education", 
-      "Stories", "Information", "Updates"
+      "Stories", "Information", "Updates", "Insights"
     ]
   },
   content: {
