@@ -19,8 +19,7 @@ const allowedOrigins = [
  "https://contentpostofficial.vercel.app",
  "https://ttcontentpost.vercel.app",
  "https://todaytalks-20e64.web.app",
- "https://todaytalks.in",
- "http://localhost:3000"
+ "https://todaytalks.in"
 ];
 const corsOptions = {
   origin: function (origin, callback) {
@@ -69,6 +68,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+
 
 
 
