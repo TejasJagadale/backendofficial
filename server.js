@@ -8,6 +8,7 @@ const s3Routes = require("./routes/s3Routes");
 const commentRoutes = require("./routes/commentRoutes");
 const authRoutes = require("./routes/authRoutes");
 const likeRoutes = require("./routes/likeRoutes");
+const fuelRoutes = require("./routes/fuelRoutes");
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use("/api/s3", s3Routes);
 app.use("/api/contents", contentRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/likes", likeRoutes);
+app.use("/api/fuel-prices", fuelRoutes);
 
 
 // Static files
@@ -68,6 +70,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+
 
 
 
